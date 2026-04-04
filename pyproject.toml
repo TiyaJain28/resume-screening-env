@@ -1,0 +1,18 @@
+[project]
+name = "resume-screening-env"
+version = "0.1.0"
+description = "OpenEnv Resume Screening Environment"
+authors = [
+    { name="Tiya Jain" }
+]
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "requests",
+    "openai"
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
