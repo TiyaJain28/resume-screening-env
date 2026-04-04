@@ -1,32 +1,27 @@
 import os
-import requests
 import json
-from openai import OpenAI   # ✅ REQUIRED
+from openai import OpenAI
 
 from env.environment import ResumeScreeningEnv
 
 
 # ---------------- ENV VARIABLES ----------------
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api-inference.huggingface.co/models")
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api-inference.huggingface.co/v1")
+API_KEY = os.getenv("HF_TOKEN") or os.getenv("OPENAI_API_KEY")
 MODEL_NAME = os.getenv("MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.2")
-HF_TOKEN = os.getenv("HF_TOKEN")
 
-API_URL = f"{API_BASE_URL}/{MODEL_NAME}"
 
-headers = {
-    "Authorization": f"Bearer {HF_TOKEN}"
-}
+# ---------------- INIT CLIENT ----------------
+client = OpenAI(
+    base_url=API_BASE_URL,
+    api_key=API_KEY
+)
 
 
 # ---------------- MODEL ACTION ----------------
 def get_action(observation):
     prompt = f"""
-You are an expert HR system.
-
-STRICT RULES:
-- Respond ONLY in valid JSON
-- Do NOT add explanation outside JSON
-- Follow format exactly
+You are an HR assistant.
 
 Resume:
 {observation['resume']}
@@ -38,37 +33,29 @@ Requirements:
 {observation['requirements']}
 
 TASK:
-1. Extract relevant skills from resume
-2. Compute match_score (0 to 1)
-3. Decide: shortlist or reject
-4. Give short reason
+- Extract relevant skills
+- Give match_score (0 to 1)
+- Decide shortlist or reject
+- Give short reason
 
-OUTPUT FORMAT (STRICT JSON):
+Return STRICT JSON ONLY:
 {{
-  "skills": ["Python", "SQL"],
+  "skills": ["Python"],
   "match_score": 0.8,
-  "decision": "shortlist",
-  "reason": "Matches backend requirements"
+  "decision": "shortlist or reject",
+  "reason": "short explanation"
 }}
 """
 
     try:
-        response = requests.post(
-            API_URL,
-            headers=headers,
-            json={
-                "inputs": prompt,
-                "parameters": {
-                    "temperature": 0.2,
-                    "max_new_tokens": 150
-                }
-            }
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+            max_tokens=150
         )
 
-        result = response.json()
-
-        text = result[0]["generated_text"]
-        print("MODEL RAW OUTPUT:", text)
+        text = response.choices[0].message.content
 
         # Extract JSON safely
         start = text.find("{")
@@ -77,18 +64,17 @@ OUTPUT FORMAT (STRICT JSON):
         return json.loads(text[start:end])
 
     except Exception:
-        # fallback (VERY IMPORTANT)
         return {
             "skills": ["Python"],
             "match_score": 0.5,
-            "decision": "shortlist",
-            "reason": "Default fallback decision"
+            "decision": "reject",
+            "reason": "fallback"
         }
 
 
 # ---------------- RUN TASK ----------------
-def run_task(task):
-    env = ResumeScreeningEnv(task=task)
+def run_task(task_name):
+    env = ResumeScreeningEnv(task=task_name)
 
     state = env.reset()
     done = False
@@ -108,7 +94,7 @@ def run_task(task):
 
 # ---------------- MAIN ----------------
 def main():
-    print("START")  # ✅ required log format
+    print("START")
 
     tasks = ["easy", "medium", "hard"]
     results = {}
@@ -119,7 +105,7 @@ def main():
         results[task] = score
         print(f"{task} score: {score:.2f}")
 
-    print("END")  # ✅ required log format
+    print("END")
     print(results)
 
 
