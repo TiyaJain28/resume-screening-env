@@ -1,6 +1,6 @@
 import os
 import json
-from openai import OpenAI
+
 
 from env.environment import ResumeScreeningEnv
 
@@ -11,14 +11,11 @@ API_KEY = os.getenv("HF_TOKEN") or os.getenv("OPENAI_API_KEY")
 MODEL_NAME = os.getenv("MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.2")
 
 
-# ---------------- INIT CLIENT ----------------
-client = OpenAI(
-    base_url=API_BASE_URL,
-    api_key=API_KEY
-)
 
 
 # ---------------- MODEL ACTION ----------------
+import requests
+
 def get_action(observation):
     prompt = f"""
 You are an HR assistant.
@@ -42,22 +39,31 @@ Return STRICT JSON ONLY:
 {{
   "skills": ["Python"],
   "match_score": 0.8,
-  "decision": "shortlist or reject",
-  "reason": "short explanation"
+  "decision": "shortlist",
+  "reason": "Matches requirements"
 }}
 """
 
     try:
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.2,
-            max_tokens=150
+        response = requests.post(
+            f"{API_BASE_URL}/{MODEL_NAME}",
+            headers={
+                "Authorization": f"Bearer {API_KEY}"
+            },
+            json={
+                "inputs": prompt,
+                "parameters": {
+                    "temperature": 0.2,
+                    "max_new_tokens": 150
+                }
+            }
         )
 
-        text = response.choices[0].message.content
+        result = response.json()
 
-        # Extract JSON safely
+        text = result[0]["generated_text"]
+
+        # extract JSON safely
         start = text.find("{")
         end = text.rfind("}") + 1
 
@@ -70,7 +76,6 @@ Return STRICT JSON ONLY:
             "decision": "reject",
             "reason": "fallback"
         }
-
 
 # ---------------- RUN TASK ----------------
 def run_task(task_name):
