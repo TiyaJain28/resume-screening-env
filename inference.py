@@ -1,17 +1,11 @@
 import os
 import json
+import requests
 
 from env.environment import ResumeScreeningEnv
 
 
-# ---------------- ENV VARIABLES ----------------
-API_KEY = os.getenv("HF_TOKEN")
-MODEL_NAME = os.getenv("MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.2")
-
-
 # ---------------- MODEL ACTION ----------------
-import requests
-
 def get_action(observation):
     prompt = f"""
 You are an HR assistant.
@@ -40,7 +34,7 @@ Return STRICT JSON ONLY:
 
     try:
         response = requests.post(
-            os.environ["API_BASE_URL"],   
+            os.environ["API_BASE_URL"] + "/chat/completions",  
             headers={
                 "Authorization": f"Bearer {os.environ['API_KEY']}",
                 "Content-Type": "application/json"
@@ -59,6 +53,7 @@ Return STRICT JSON ONLY:
 
         text = result["choices"][0]["message"]["content"]
 
+        # Extract JSON safely
         start = text.find("{")
         end = text.rfind("}") + 1
 
