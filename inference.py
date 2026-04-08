@@ -34,7 +34,7 @@ Return STRICT JSON ONLY:
 
     try:
         response = requests.post(
-            os.environ["API_BASE_URL"] + "/chat/completions",  
+            os.environ["API_BASE_URL"] + "/chat/completions",
             headers={
                 "Authorization": f"Bearer {os.environ['API_KEY']}",
                 "Content-Type": "application/json"
@@ -92,7 +92,15 @@ def main():
 
             print(f"[STEP] step={steps} reward={reward}", flush=True)
 
-        print(f"[END] task={task} score={total_reward} steps={steps}", flush=True)
+        # Normalize score to (0,1)
+        score = total_reward / (steps + 1)
+
+        if score <= 0:
+            score = 0.01
+        elif score >= 1:
+            score = 0.99
+
+        print(f"[END] task={task} score={score} steps={steps}", flush=True)
 
 
 if __name__ == "__main__":
