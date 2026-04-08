@@ -1,17 +1,23 @@
 import os
 import json
-import requests
 
 from env.environment import ResumeScreeningEnv
 
 
 # ---------------- ENV VARIABLES ----------------
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api-inference.huggingface.co/models")
 API_KEY = os.getenv("HF_TOKEN")
 MODEL_NAME = os.getenv("MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.2")
 
 
 # ---------------- MODEL ACTION ----------------
+from openai import OpenAI
+
+client = OpenAI(
+    base_url=os.environ["API_BASE_URL"],
+    api_key=os.environ["API_KEY"]
+)
+
+
 def get_action(observation):
     prompt = f"""
 You are an HR assistant.
@@ -41,20 +47,14 @@ Return STRICT JSON ONLY:
 """
 
     try:
-        response = requests.post(
-            f"{API_BASE_URL}/{MODEL_NAME}",
-            headers={"Authorization": f"Bearer {API_KEY}"},
-            json={
-                "inputs": prompt,
-                "parameters": {
-                    "temperature": 0.2,
-                    "max_new_tokens": 150
-                }
-            }
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",   # proxy will handle internally
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+            max_tokens=150
         )
 
-        result = response.json()
-        text = result[0]["generated_text"]
+        text = response.choices[0].message.content
 
         start = text.find("{")
         end = text.rfind("}") + 1
