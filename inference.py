@@ -40,7 +40,7 @@ Return STRICT JSON ONLY:
 
     try:
         response = requests.post(
-            os.environ["API_BASE_URL"],   # ✅ proxy
+            os.environ["API_BASE_URL"],   
             headers={
                 "Authorization": f"Bearer {os.environ['API_KEY']}",
                 "Content-Type": "application/json"
