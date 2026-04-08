@@ -10,13 +10,7 @@ MODEL_NAME = os.getenv("MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.2")
 
 
 # ---------------- MODEL ACTION ----------------
-from openai import OpenAI
-
-client = OpenAI(
-    base_url=os.environ["API_BASE_URL"],
-    api_key=os.environ["API_KEY"]
-)
-
+import requests
 
 def get_action(observation):
     prompt = f"""
@@ -24,18 +18,16 @@ You are an HR assistant.
 
 Resume:
 {observation['resume']}
-
 Job Role:
 {observation['job_role']}
-
 Requirements:
 {observation['requirements']}
 
 TASK:
-- Extract relevant skills
+- Extract skills
 - Give match_score (0 to 1)
 - Decide shortlist or reject
-- Give short reason
+- Give reason
 
 Return STRICT JSON ONLY:
 {{
@@ -47,14 +39,25 @@ Return STRICT JSON ONLY:
 """
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",   # proxy will handle internally
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.2,
-            max_tokens=150
+        response = requests.post(
+            os.environ["API_BASE_URL"],   # ✅ proxy
+            headers={
+                "Authorization": f"Bearer {os.environ['API_KEY']}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "gpt-4o-mini",
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.2,
+                "max_tokens": 150
+            }
         )
 
-        text = response.choices[0].message.content
+        result = response.json()
+
+        text = result["choices"][0]["message"]["content"]
 
         start = text.find("{")
         end = text.rfind("}") + 1
