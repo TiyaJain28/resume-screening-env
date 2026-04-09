@@ -1,5 +1,4 @@
-﻿https://tiyajain2810-resume-scaler.hf.space/docs
- 
+
  # resume-screening-env
 #it is aligned with all pre-submission checklist
  Resume Screening OpenEnv Environment
@@ -14,11 +13,10 @@ Reward-based learning
 Easy → Medium → Hard tasks
 Live Demo (Hugging Face Space)
 
- IMPORTANT: Open Swagger UI here
  
  
 
-https://tiyajain2810-resume-scaler.hf.space/docs
+
 
 
 
@@ -110,8 +108,5 @@ docker run -p 8000:8000 resume-env
     ├── tasks.py
  Environment Variables
 
-Set in Hugging Face Secrets:
-
-HF_TOKEN=your_token
 MODEL_NAME=mistralai/Mistral-7B-Instruct-v0.2
 OpenEnv Compliance
